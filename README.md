@@ -1,73 +1,95 @@
-# React + TypeScript + Vite
+# ⟡ MirrorConstellation
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**A live visualization of a sovereign AI operating system — your knowledge, archetypes, and agent memory as a navigable star map.**
 
-Currently, two official plugins are available:
+🔗 **Live demo:** [constellation.activemirror.ai](https://constellation.activemirror.ai)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## What it is
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+MirrorConstellation is the visual interface for [MirrorDNA](https://activemirror.ai) — a local-first, sovereign AI operating system built by one person over 10 months.
 
-## Expanding the ESLint configuration
+Three live views:
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+| Mode | What you see |
+|------|-------------|
+| **⟡ The Mirror** | Your captured moments, thoughts, and patterns — classified by archetype, confidence-weighted, governance-hashed |
+| **⟡ Brain Scan** | Your full knowledge graph — 300+ nodes parsed live from a 5,000-note Obsidian vault |
+| **⟡ Memory** | Agent memory topology — every AI session, handoff, and knowledge item as a navigable graph |
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+Everything runs **local-first**. Live data comes from a pattern engine on your machine (`localhost:8203`). The public demo shows mock data — your vault never leaves your hardware.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+---
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Architecture
+
+```
+MirrorConstellation (React + D3)
+    └── Pattern Engine (FastAPI, port 8203)
+            ├── /api/mirror-data     ← vault archetypes + captured moments
+            ├── /api/graph-data      ← full knowledge graph (live vault parse)
+            ├── /api/rhythm          ← time-of-day physics modifier
+            ├── /api/memory-graph    ← agent session memory topology
+            └── /api/capture         ← capture new moments (POST)
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+The pattern engine reads a live Obsidian vault (~5,000 notes) and exposes it as a graph API. No database. No cloud. Governance hashes on every capture.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+---
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Run locally
+
+**Requirements:** Node 18+, Python 3.10+
+
+```bash
+# Clone
+git clone https://github.com/MirrorDNA-Reflection-Protocol/MirrorConstellation
+cd MirrorConstellation
+
+# Install frontend
+npm install
+
+# Start pattern engine (serves mock data without a vault configured)
+cd pattern_engine
+pip install fastapi uvicorn
+uvicorn server:app --port 8203 &
+
+# Start frontend
+cd ..
+npm run dev
+# → http://localhost:5174
 ```
+
+Without the pattern engine, the app falls back to embedded mock data automatically.
+
+---
+
+## Features
+
+- **D3 force simulation** — archetype clusters, physics layout, breath animation tied to time of day
+- **Live capture** — type a thought, get it classified and added to the constellation in real time
+- **Governance layer** — SHA-256 provenance hash on every capture; pending nodes quarantined until confirmed
+- **WebSocket updates** — new captures appear across sessions without refresh
+- **Memory graph** — agent session topology: conversations → knowledge items → handoffs → agents
+- **Screenshot export** — capture the canvas as PNG
+- **Local-first fallback** — last-known-state cache, graceful offline degradation
+
+---
+
+## Part of MirrorDNA
+
+One component of a larger sovereign AI stack:
+
+- **MirrorBrain** — multi-agent orchestration with session memory and OAuth handoffs
+- **MirrorOrgOS** — governance: workorders, risk classification, board minutes
+- **MirrorGate** — privacy/safety proxy for all external AI calls
+- **Memory Bus** — cross-agent persistent context, no cloud dependency
+
+Built Feb 2026. Local hardware. No VC. No platform lock-in.
+
+→ [activemirror.ai](https://activemirror.ai)
+
+---
+
+If this resonates, ⭐ the repo.
