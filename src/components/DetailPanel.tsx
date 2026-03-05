@@ -1,22 +1,38 @@
 import { useEffect, useState } from 'react';
 import type { ConstellationNode, Mode } from '../types';
+import { confirmArchetype } from '../api/patternEngine';
 
 interface Props {
   node: ConstellationNode | null;
-  mode: Mode; // reserved for future mode-specific display
+  mode: Mode;
   onClose: () => void;
+  onConfirm?: (nodeId: string) => void;
 }
 
-export default function DetailPanel({ node, onClose }: Props) {
+export default function DetailPanel({ node, onClose, onConfirm }: Props) {
   const [visible, setVisible] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
 
   useEffect(() => {
     if (node) {
       setTimeout(() => setVisible(true), 10);
+      setConfirmed(false);
     } else {
       setVisible(false);
     }
   }, [node]);
+
+  const handleConfirm = async () => {
+    if (!node || confirming) return;
+    setConfirming(true);
+    const ok = await confirmArchetype(node.id);
+    if (ok) {
+      setConfirmed(true);
+      onConfirm?.(node.id);
+    }
+    setConfirming(false);
+  };
 
   if (!node) return null;
 
@@ -166,19 +182,67 @@ export default function DetailPanel({ node, onClose }: Props) {
         </div>
       )}
 
-      {/* Governance note for low-confidence nodes */}
-      {node.confidence < 0.75 && (
+      {/* Pending node — confirmation flow */}
+      {node.type === 'pending' && !confirmed && (
         <div style={{
           marginTop: '1.5rem',
           padding: '0.75rem',
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.15)',
+          borderRadius: '6px',
+        }}>
+          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.5)', fontFamily: 'JetBrains Mono, monospace', marginBottom: '0.75rem' }}>
+            ○ pending confirmation — confidence {Math.round(node.confidence * 100)}%
+          </div>
+          <button
+            onClick={handleConfirm}
+            disabled={confirming}
+            style={{
+              width: '100%', padding: '0.5rem', background: 'transparent',
+              border: '1px solid rgba(0,255,148,0.3)', borderRadius: '4px',
+              color: 'rgba(0,255,148,0.8)', fontFamily: 'JetBrains Mono, monospace',
+              fontSize: '0.72rem', cursor: confirming ? 'wait' : 'pointer',
+              letterSpacing: '0.06em',
+            }}
+          >
+            {confirming ? 'confirming…' : '⟡ confirm this pattern'}
+          </button>
+        </div>
+      )}
+
+      {confirmed && (
+        <div style={{
+          marginTop: '1.5rem', padding: '0.75rem',
+          background: 'rgba(0,255,148,0.06)',
+          border: '1px solid rgba(0,255,148,0.2)',
+          borderRadius: '6px', fontSize: '0.72rem',
+          color: 'rgba(0,255,148,0.7)', fontFamily: 'JetBrains Mono, monospace',
+        }}>
+          ⟡ confirmed — pattern integrated
+        </div>
+      )}
+
+      {/* Governance note for low-confidence (non-pending) */}
+      {node.confidence < 0.75 && node.type !== 'pending' && (
+        <div style={{
+          marginTop: '1.5rem', padding: '0.75rem',
           background: 'rgba(255,255,100,0.06)',
           border: '1px solid rgba(255,255,100,0.2)',
-          borderRadius: '6px',
-          fontSize: '0.72rem',
-          color: 'rgba(255,255,100,0.7)',
-          fontFamily: 'JetBrains Mono, monospace',
+          borderRadius: '6px', fontSize: '0.72rem',
+          color: 'rgba(255,255,100,0.7)', fontFamily: 'JetBrains Mono, monospace',
         }}>
-          ⚠ Below confidence threshold. Awaiting confirmation.
+          ⚠ below confidence threshold
+        </div>
+      )}
+
+      {/* Provenance hash */}
+      {(node as ConstellationNode & { provenance_hash?: string }).provenance_hash && (
+        <div style={{
+          marginTop: '1rem', fontSize: '0.62rem',
+          color: 'rgba(255,255,255,0.18)', fontFamily: 'JetBrains Mono, monospace',
+          letterSpacing: '0.04em', wordBreak: 'break-all',
+        }}>
+          provenance: {(node as ConstellationNode & { provenance_hash?: string }).provenance_hash}
         </div>
       )}
     </div>

@@ -4,9 +4,13 @@ export type NodeType =
   | 'project'
   | 'concept'
   | 'tool'
-  | 'person';
+  | 'person'
+  | 'pending'; // Awaiting Paul confirmation — new archetype or below confidence threshold
 
-export type Mode = 'graph' | 'mirror';
+export type Mode = 'graph' | 'mirror' | 'memory';
+
+export type TimeOfDay = 'dawn' | 'morning' | 'afternoon' | 'evening' | 'night';
+export type EnergyLevel = 'low' | 'medium' | 'high';
 
 export interface ConstellationNode {
   id: string;
@@ -18,6 +22,8 @@ export interface ConstellationNode {
   description?: string;
   timestamp?: number;
   tags?: string[];
+  isNew?: boolean;             // just added — triggers appearance animation
+  provenance_hash?: string;   // governance: sha256 of text|archetype|ts|method
   // D3 simulation fields
   x?: number;
   y?: number;
@@ -41,6 +47,17 @@ export interface ConstellationData {
 export interface PresenceState {
   text: string;
   archetype: string;
-  energy: 'low' | 'medium' | 'high';
-  timeOfDay: 'dawn' | 'morning' | 'afternoon' | 'evening' | 'night';
+  energy: EnergyLevel;
+  timeOfDay: TimeOfDay;
+}
+
+export interface CaptureResult {
+  id: string;
+  label: string;
+  cluster: string;
+  archetype: string;
+  confidence: number;
+  isNewArchetype: boolean;
+  rawText: string;
+  timestamp: number;
 }

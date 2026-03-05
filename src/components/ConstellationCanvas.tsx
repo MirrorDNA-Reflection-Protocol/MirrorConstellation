@@ -7,6 +7,7 @@ interface Props {
   mode: Mode;
   onNodeClick: (node: ConstellationNode | null) => void;
   selectedNode: ConstellationNode | null;
+  breathSpeed?: number; // 0.6–1.4, from time-of-day context
 }
 
 const CLUSTER_COLORS: Record<string, string> = {
@@ -33,9 +34,12 @@ const NODE_RADII: Record<string, number> = {
   tool:      12,
   moment:    7,
   person:    10,
+  pending:   6,
 };
 
-export default function ConstellationCanvas({ data, onNodeClick, selectedNode }: Props) {
+export default function ConstellationCanvas({ data, onNodeClick, selectedNode, breathSpeed = 1.0 }: Props) {
+  const breathSpeedRef = useRef(breathSpeed);
+  breathSpeedRef.current = breathSpeed;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const simulationRef = useRef<d3.Simulation<ConstellationNode, ConstellationEdge> | null>(null);
   const animFrameRef = useRef<number>(0);
@@ -65,8 +69,8 @@ export default function ConstellationCanvas({ data, onNodeClick, selectedNode }:
 
     const W = canvas.width;
     const H = canvas.height;
-    nebulaPhaseRef.current += 0.003;
-    pulsePhaseRef.current += 0.02;
+    nebulaPhaseRef.current += 0.003 * breathSpeedRef.current;
+    pulsePhaseRef.current += 0.02 * breathSpeedRef.current;
 
     // Clear
     ctx.clearRect(0, 0, W, H);
@@ -197,6 +201,23 @@ export default function ConstellationCanvas({ data, onNodeClick, selectedNode }:
         core.addColorStop(1, 'transparent');
         ctx.fillStyle = core;
         ctx.fill();
+      } else if (node.type === 'pending') {
+        // Pending: white dashed ring, pulsing, no fill — awaiting confirmation
+        ctx.fillStyle = 'rgba(255,255,255,0.05)';
+        ctx.fill();
+        const pendingPulse = 0.5 + 0.5 * Math.sin(pulsePhaseRef.current * 1.5 + idHash * 0.1);
+        ctx.strokeStyle = `rgba(255,255,255,${0.3 + pendingPulse * 0.5})`;
+        ctx.setLineDash([4, 4]);
+        ctx.lineWidth = 1.5 / transformRef.current.k;
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // Outer pulse ring
+        const outerR = displayR * (1.5 + pendingPulse * 0.8);
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, outerR, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(255,255,255,${(1 - pendingPulse) * 0.2})`;
+        ctx.lineWidth = 1 / transformRef.current.k;
+        ctx.stroke();
       } else {
         // Moment/project/concept/tool: ring + subtle fill
         const fillAlpha = isHovered || isSelected ? 0.25 : node.strength * 0.15;
@@ -361,7 +382,7 @@ export default function ConstellationCanvas({ data, onNodeClick, selectedNode }:
     onNodeClick(node);
   }, [getNodeAtPoint, onNodeClick]);
 
-  // Touch support (pinch zoom handled by D3, tap = click)
+  // Touch support
   const handleTouchEnd = useCallback((e: React.TouchEvent) => {
     if (e.changedTouches.length === 1) {
       const t = e.changedTouches[0];
@@ -370,13 +391,36 @@ export default function ConstellationCanvas({ data, onNodeClick, selectedNode }:
     }
   }, [getNodeAtPoint, onNodeClick]);
 
+  // Keyboard navigation — Tab cycles through archetype nodes, Enter selects
+  const focusIndexRef = useRef(-1);
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    const archetypeNodes = nodesRef.current.filter(n => n.type === 'archetype' || n.type === 'concept');
+    if (archetypeNodes.length === 0) return;
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      focusIndexRef.current = (focusIndexRef.current + (e.shiftKey ? -1 : 1) + archetypeNodes.length) % archetypeNodes.length;
+      hoveredNodeRef.current = archetypeNodes[focusIndexRef.current];
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onNodeClick(hoveredNodeRef.current);
+    } else if (e.key === 'Escape') {
+      onNodeClick(null);
+      hoveredNodeRef.current = null;
+      focusIndexRef.current = -1;
+    }
+  }, [onNodeClick]);
+
   return (
     <canvas
       ref={canvasRef}
-      style={{ width: '100%', height: '100%', display: 'block', touchAction: 'none' }}
+      style={{ width: '100%', height: '100%', display: 'block', touchAction: 'none', outline: 'none' }}
+      tabIndex={0}
+      role="img"
+      aria-label="MirrorConstellation — knowledge graph. Use Tab to navigate nodes, Enter to select."
       onMouseMove={handleMouseMove}
       onClick={handleClick}
       onTouchEnd={handleTouchEnd}
+      onKeyDown={handleKeyDown}
     />
   );
 }

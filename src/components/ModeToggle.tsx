@@ -17,7 +17,7 @@ export default function ModeToggle({ mode, onChange, isTransitioning }: Props) {
       borderRadius: '100px',
       padding: '3px',
     }}>
-      {(['graph', 'mirror'] as Mode[]).map((m) => (
+      {(['graph', 'mirror', 'memory'] as Mode[]).map((m) => (
         <button
           key={m}
           onClick={() => !isTransitioning && onChange(m)}
@@ -31,12 +31,14 @@ export default function ModeToggle({ mode, onChange, isTransitioning }: Props) {
             letterSpacing: '0.06em',
             textTransform: 'uppercase',
             transition: 'all 0.25s ease',
-            background: mode === m ? (m === 'graph' ? '#00ff94' : '#a855f7') : 'transparent',
+            background: mode === m
+              ? (m === 'graph' ? '#00ff94' : m === 'mirror' ? '#a855f7' : '#f59e0b')
+              : 'transparent',
             color: mode === m ? '#050505' : 'rgba(255,255,255,0.45)',
             fontWeight: mode === m ? 600 : 400,
           }}
         >
-          {m === 'graph' ? '⟡ Brain Scan' : '⟡ The Mirror'}
+          {m === 'graph' ? '⟡ Brain Scan' : m === 'mirror' ? '⟡ The Mirror' : '⟡ Memory'}
         </button>
       ))}
     </div>
